@@ -2,6 +2,11 @@
 
 **HighlightSync** is a plugin for [KOReader](https://github.com/koreader/koreader) that automatically synchronizes your **highlights**, **notes**, and **bookmarks** across devices or backup locations.
 
+> ⚠️ **Beta Software Warning**  
+> This plugin is currently in **beta**. Use at your own risk.  
+> The author is **not responsible for any data loss** that may occur as a result of using this plugin.
+
+
 ## ✨ Features
 
 - Synchronizes:
