@@ -43,14 +43,14 @@ local function get_newer(item1, item2)
 end
 
 -- Function to merge highlights from local, server, and last sync versions
-function Merge_highlights(local_annotations, server_annotations, last_sync_annotations)
+function merge_highlights(local_annotations, server_annotations, last_sync_annotations)
     local merged = {}
 
     -- Convert lists into tables indexed by the unique key
     local local_map = convert_to_map(local_annotations)
     local server_map = convert_to_map(server_annotations)
     local last_sync_map = convert_to_map(last_sync_annotations)
-    -- salt.save(server_map,SidecarDir .. "/anotation-server.lua")
+    -- salt.save(server_map,SidecarDir .. "/anotation-server.lua"):
     -- salt.save(local_map, SidecarDir .. "/anotation-local.lua")
     -- salt.save(last_sync_map, SidecarDir .. "/anotation-last-sync.lua")
     -- Process local highlights

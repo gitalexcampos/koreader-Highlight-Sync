@@ -32,7 +32,6 @@ end
 function Highlightsync.onSync(local_path, cached_path, income_path)
 
     local local_highlights = dofile(local_path)
-    
     local cached_highlights
     local success, result = pcall(dofile, cached_path)
     if success then
@@ -40,7 +39,6 @@ function Highlightsync.onSync(local_path, cached_path, income_path)
     else
         cached_highlights = {}
     end
-    
     local income_highlights
     local success, result = pcall(dofile, income_path)
     if success then
@@ -48,8 +46,7 @@ function Highlightsync.onSync(local_path, cached_path, income_path)
     else
         income_highlights = {}
     end
- 
-    local annotations = Merge.Merge_highlights(local_highlights,income_highlights,cached_highlights)
+    local annotations = Merge.merge_highlights(local_highlights,income_highlights,cached_highlights)
 
     salt.save(annotations,SidecarDir .. "/" .. FileName .. ".lua",true) -- Save annotations local
     DataAnnotations = annotations
