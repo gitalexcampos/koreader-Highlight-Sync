@@ -28,34 +28,28 @@ function Highlightsync:init()
     self.ui.menu:registerToMainMenu(self))
 end
 
-local function fileExists(filename)
-    local file = io.open(filename, "r")
-    if file then
-        file:close()
-        return true
-    else
-        return false
-
-    end
-end
-
 
 function Highlightsync.onSync(local_path, cached_path, income_path)
 
     local local_highlights = dofile(local_path)
+    
     local cached_highlights
-    if cached_path ~= nil and fileExists(cached_path) then -- Aqui está o erro. O arquivo não existe, mas está tentando abrir
-        cached_highlights = dofile(cached_path)
+    local success, result = pcall(dofile, cached_path)
+    if success then
+        cached_highlights = result
     else
         cached_highlights = {}
     end
+    
     local income_highlights
-    if income_path ~= nil and fileExists(income_path)then
-        income_highlights = dofile(income_path)
+    local success, result = pcall(dofile, income_path)
+    if success then
+        income_highlights = result
     else
         income_highlights = {}
     end
-    local annotations = Merge.merge_highlights(local_highlights,income_highlights,cached_highlights)
+ 
+    local annotations = Merge.Merge_highlights(local_highlights,income_highlights,cached_highlights)
 
     salt.save(annotations,SidecarDir .. "/" .. FileName .. ".lua",true) -- Save annotations local
     DataAnnotations = annotations
