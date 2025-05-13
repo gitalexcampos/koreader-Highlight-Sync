@@ -43,7 +43,7 @@ local function get_newer(item1, item2)
 end
 
 -- Function to merge highlights from local, server, and last sync versions
-function merge_highlights(local_annotations, server_annotations, last_sync_annotations)
+function Merge_highlights(local_annotations, server_annotations, last_sync_annotations)
     local merged = {}
 
     -- Convert lists into tables indexed by the unique key
@@ -57,9 +57,9 @@ function merge_highlights(local_annotations, server_annotations, last_sync_annot
     for key, local_highlight in pairs(local_map) do
         local server_highlight = server_map[key]
         local last_sync_highlight = last_sync_map[key]
-        salt.save(server_map, SidecarDir .. "/key-server.lua")
-        salt.save(local_map, SidecarDir .. "/key-local.lua")
-        salt.save(last_sync_map, SidecarDir .. "/last-key.lua")
+        -- salt.save(server_map, SidecarDir .. "/key-server.lua")
+        -- salt.save(local_map, SidecarDir .. "/key-local.lua")
+        -- salt.save(last_sync_map, SidecarDir .. "/last-key.lua")
 
         if server_highlight == nil and last_sync_highlight ~= nil then
             -- ❌ If the highlight was in the last sync, still exists locally, but is missing from the server,
