@@ -9,12 +9,42 @@ local WidgetContainer = require("ui/widget/container/widgetcontainer")
 local _ = require("gettext")
 local SyncService = require("frontend/apps/cloudstorage/syncservice")
 local Merge = require("merge")
-local salt = assert(require("salt"))
+local rapidjson = require("rapidjson")
 
 local Highlightsync = WidgetContainer:extend{
     name = "Highlightsync",
     is_doc_only = false,
 }
+
+local function read_json_file(path)
+    local file = io.open(path, "r")
+    if not file then
+        -- Arquivo não existe
+        return {}
+    end
+
+    local content = file:read("*a")
+    file:close()
+
+    if not content or content == "" then
+        return {}
+    end
+
+    local ok, data = pcall(rapidjson.decode, content)
+    if not ok or type(data) ~= "table" then
+        return {}
+    end
+
+    return data
+end
+
+local function write_json_file(path, data)
+    local file = io.open(path, "w")
+    if not file then return false end
+    file:write(rapidjson.encode(data))
+    file:close()
+    return true
+end
 
 Highlightsync.settings = G_reader_settings:readSetting("statistics")
 
@@ -31,24 +61,12 @@ end
 
 function Highlightsync.onSync(local_path, cached_path, income_path)
 
-    local local_highlights = dofile(local_path)
-    local cached_highlights
-    local success, result = pcall(dofile, cached_path)
-    if success then
-        cached_highlights = result
-    else
-        cached_highlights = {}
-    end
-    local income_highlights
-    local success, result = pcall(dofile, income_path)
-    if success then
-        income_highlights = result
-    else
-        income_highlights = {}
-    end
+    local local_highlights  = read_json_file(local_path)  or {}
+    local cached_highlights = read_json_file(cached_path) or {}
+    local income_highlights = read_json_file(income_path) or {}
     local annotations = Merge.merge_highlights(local_highlights,income_highlights,cached_highlights)
 
-    salt.save(annotations,SidecarDir .. "/" .. FileName .. ".lua",true) -- Save annotations local
+    write_json_file(SidecarDir .. "/" .. FileName .. ".json", annotations) -- Save annotations local
     DataAnnotations = annotations
     return true
 end
@@ -79,8 +97,8 @@ function Highlightsync:onSyncBookHighlights()
          DataAnnotations = self.ui.doc_settings.data.annotations
          SidecarDir = self.ui.doc_settings.doc_sidecar_dir
          FileName = SidecarDir:match("([^/]+)/*$")
-         salt.save(self.ui.annotation.annotations,SidecarDir .. "/" .. FileName .. ".lua",true) -- Save annotations local
-         SyncService.sync(self.settings.sync_server, SidecarDir .. "/" .. FileName .. ".lua", self.onSync)
+         write_json_file(SidecarDir .. "/" .. FileName .. ".json", self.ui.annotation.annotations) -- Save annotations local
+         SyncService.sync(self.settings.sync_server, SidecarDir .. "/" .. FileName .. ".json", self.onSync)
          self.ui.annotation.annotations = DataAnnotations
          self.ui:reloadDocument()
     end)
