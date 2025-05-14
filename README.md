@@ -1,28 +1,81 @@
-# HighlightSync Plugin for KOReader
+# 📚 HighlightSync Plugin for KOReader
 
-**HighlightSync** is a plugin for [KOReader](https://github.com/koreader/koreader) that automatically synchronizes your **highlights**, **notes**, and **bookmarks** across devices or backup locations.
+**HighlightSync** is a plugin for [KOReader](https://github.com/koreader/koreader) that **synchronizes and merges your highlights, notes, and bookmarks** across multiple devices or cloud backup locations. It allows you to sync highlights made offline on two or more devices, ensuring that no data is lost when syncing.
 
-> ⚠️ **Beta Software Warning**  
-> This plugin is currently in **beta**. Use at your own risk.  
-> The author is **not responsible for any data loss** that may occur as a result of using this plugin.
+Supports popular cloud services like **WebDAV** and **Dropbox**, helping you keep your annotations consistent no matter which device you’re reading on.
 
+---
+
+## ⚠️ Beta Warning
+
+This plugin is currently in **beta**. Use at your own risk.
+
+While it has been tested on several platforms, the author is **not responsible for any data loss**. Please back up your annotations regularly.
+
+---
+
+## ✅ Tested Devices
+
+- KOReader on **Linux**
+- **Boox Go 6**
+- **Boox Go 10.3**
+
+More devices may work — feel free to open an issue or pull request with your results!
+
+---
 
 ## ✨ Features
 
-- Synchronizes:
+- 🔄 **Manual sync** of:
   - Highlighted text
   - Notes
   - Bookmarks (page marks)
-- Designed to integrate directly with KOReader's annotation system
-- Lightweight and easy to install
+- 📝 **Merges offline highlights and notes** from two or more devices
+- ☁️ Works with **WebDAV** and **Dropbox**
+- 📅 Syncs highlight edits based on **the latest update timestamp**
+- ⚡ Lightweight and easy to install
+
+---
 
 ## 📥 Installation
 
 To install the plugin:
 
-1. Copy the entire folder `highlightsync.koplugin` to your KOReader device.
-2. Place it inside the `koreader/plugins/` directory.
+1. Download the **latest release** from the [GitHub repository](https://github.com/gitalexcampos/koreader-Highlight-Sync/releases).
+2. **Extract the downloaded file** and locate the `highlightsync.koplugin` folder.
+3. Copy the `highlightsync.koplugin` folder.
+4. Place it inside the `koreader/plugins/` directory to your KOReader device.
 
-For example, if your KOReader is mounted as a USB drive:
-```bash
-cp -r highlightsync.koplugin /path/to/koreader/plugins/
+---
+
+## 🔧 Setup
+
+1. Open KOReader.
+2. Go to the **Main Menu > Tools > Highlight Sync > Sync Cloud**.
+3. Set up your **cloud service** (WebDAV or Dropbox).
+4. Select the **folder** where your **JSON files** containing the highlights of your books are or will be stored. (This folder **does not need** to be the same as your ebooks folder.)
+5. Choose **Sync Highlights** when you want to sync your annotations manually.
+
+---
+
+## 🛠 Known Limitations
+
+- The **book names** on the devices must be **exactly the same** for syncing to work correctly.
+- If two highlights start at the same position but end at different ones, the **most recent one is kept**.
+- This is an early version — feedback is welcome!
+
+---
+
+## 🛠 Future Improvements
+
+- **Automatic synchronization** of highlights when opening a book. This will eliminate the need for manual syncing, making the process even more seamless and efficient.
+
+---
+
+## 🤝 Contributing
+
+Pull requests and issue reports are welcome! If you have ideas or find bugs, feel free to open an issue.
+
+---
+
+
