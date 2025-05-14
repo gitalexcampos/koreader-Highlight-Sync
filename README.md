@@ -53,8 +53,10 @@ To install the plugin:
 1. Open KOReader.
 2. Go to the **Main Menu > Tools > Highlight Sync > Sync Cloud**.
 3. Set up your **cloud service** (WebDAV or Dropbox).
-4. Select the **folder** where your **JSON files** containing the highlights of your books are or will be stored. (This folder **does not need** to be the same as your ebooks folder.)
-5. Choose **Sync Highlights** when you want to sync your annotations manually.
+4. Select the **folder** where your **JSON files** containing the highlights of your books are or will be stored. (This folder **does not need** to be the same as your ebooks folder.) 
+   ⚠️ **If you change this folder after you’ve already synced a book**, you **must manually move the book's JSON file** from the old folder to the new one in your cloud service.  
+   If the plugin doesn’t find the file in the new location, it will assume that the highlights were **deleted on another device** and will remove them during sync.
+6. Choose **Sync Highlights** when you want to sync your annotations manually.
 
 ---
 
