@@ -64,14 +64,23 @@ local function write_json_file(path, data)
     return true
 end
 
-Highlightsync.settings = G_reader_settings:readSetting("statistics")
 
 function Highlightsync:onDispatcherRegisterActions()
     Dispatcher:registerAction("hightlightsync_action", {category="tool", event="Highlightsync", title=_("Highlight Sync"), general=true,})
 end
 
+Highlightsync.default_settings = {
+       is_enabled = true,
+}
+
+
 
 function Highlightsync:init()
+    if self.document and self.document.is_pic then
+        return -- disable in PIC documents
+    end
+
+    Highlightsync.settings = G_reader_settings:readSetting("highlight_sync", self.default_settings)
     self:onDispatcherRegisterActions(
     self.ui.menu:registerToMainMenu(self))
 end
