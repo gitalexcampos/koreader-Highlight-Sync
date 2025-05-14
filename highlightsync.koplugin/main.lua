@@ -11,6 +11,24 @@ local SyncService = require("frontend/apps/cloudstorage/syncservice")
 local Merge = require("merge")
 local rapidjson = require("rapidjson")
 
+local function dir_exists(path)
+    local ok, _, code = os.rename(path, path)
+    if not ok then
+        -- Código 13 = permission denied, mas o diretório existe
+        return code == 13
+    end
+    return true
+end
+
+local function ensure_dir_exists(path)
+    if not dir_exists(path) then
+        local result = os.execute('mkdir -p "' .. path .. '"')
+        if not result then
+            error("Failed to create directory: " .. path)
+        end
+    end
+end
+
 local Highlightsync = WidgetContainer:extend{
     name = "Highlightsync",
     is_doc_only = false,
@@ -61,10 +79,10 @@ end
 
 function Highlightsync.onSync(local_path, cached_path, income_path)
 
-    local local_highlights  = read_json_file(local_path)  or {}
+    local local_highlights  = DataAnnotations --read_json_file(local_path)  or {}
     local cached_highlights = read_json_file(cached_path) or {}
     local income_highlights = read_json_file(income_path) or {}
-    local annotations = Merge.merge_highlights(local_highlights,income_highlights,cached_highlights)
+    local annotations = Merge.Merge_highlights(local_highlights,income_highlights,cached_highlights)
 
     write_json_file(SidecarDir .. "/" .. FileName .. ".json", annotations) -- Save annotations local
     DataAnnotations = annotations
@@ -94,9 +112,10 @@ function Highlightsync:onSyncBookHighlights()
     })
 
     UIManager:nextTick(function()
-         DataAnnotations = self.ui.doc_settings.data.annotations
+         DataAnnotations = self.ui.annotation.annotations -- self.ui.doc_settings.data.annotations
          SidecarDir = self.ui.doc_settings.doc_sidecar_dir
          FileName = SidecarDir:match("([^/]+)/*$")
+         ensure_dir_exists(SidecarDir)
          write_json_file(SidecarDir .. "/" .. FileName .. ".json", self.ui.annotation.annotations) -- Save annotations local
          SyncService.sync(self.settings.sync_server, SidecarDir .. "/" .. FileName .. ".json", self.onSync)
          self.ui.annotation.annotations = DataAnnotations

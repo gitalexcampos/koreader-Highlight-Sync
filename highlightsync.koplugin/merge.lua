@@ -1,5 +1,3 @@
-local salt = assert(require("salt"))
-
 local function parse_datetime_cached()
     local cache = {}
     return function(str)
@@ -89,6 +87,6 @@ end
 
 local M = {}
 
-M.merge_highlights = merge_highlights
+M.Merge_highlights = merge_highlights
 
 return M
