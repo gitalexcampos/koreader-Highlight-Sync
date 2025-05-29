@@ -66,7 +66,7 @@ end
 
 
 function Highlightsync:onDispatcherRegisterActions()
-    Dispatcher:registerAction("hightlightsync_action", {category="tool", event="Highlightsync", title=_("Highlight Sync"), general=true,})
+    Dispatcher:registerAction("hightlightsync_action", {category="none", event="SyncBookHighlights", title=_("Highlight Sync"), reader=true,})
 end
 
 Highlightsync.default_settings = {
