@@ -79,6 +79,22 @@ local function merge_highlights(local_annotations, server_annotations, last_sync
         end
         if not a.pos0 then return true end
         if not b.pos0 then return false end
+
+        -- Consider case where positions are tables
+        -- with keys x, y, zoom, page, rotation,
+        -- as is the case with pdf highlights
+        if type(a.pos0) == "table" then
+          if type(b.pos0) == "table" then
+            return a.pos0.y < b.pos0.y or
+                  (a.pos0.y == b.pos0.y and a.pos0.x < b.pos0.y)
+          end
+          -- Posistions can't be compared
+          return false
+        elseif type(b.pos0) == "table" then
+          -- Posistions can't be compared
+          return true
+        end
+
         return a.pos0 < b.pos0
     end)
 
