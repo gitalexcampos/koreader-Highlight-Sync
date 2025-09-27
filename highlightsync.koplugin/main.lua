@@ -34,6 +34,45 @@ local Highlightsync = WidgetContainer:extend{
     is_doc_only = false,
 }
 
+--- Needed so the "ext" table existing in pdf annotations to be encoded
+--- in JSON, as non-contiguous integer keys aren't allowed in JSON.
+--- @return table new_annotations The original table, but with the `ext` sub-table's
+--- number keys replaced with strings.
+local function with_stringified_ext_keys(annotations)
+    local new_annotations = {}
+    for hash, annotation in pairs(annotations) do
+        local new_annotation
+        if annotation["ext"] then
+            new_annotation = {}
+            for k, v in pairs(annotation) do
+                new_annotation[k] = v
+            end
+            local new_ext = {}
+            for k, v in pairs(annotation["ext"]) do
+                new_ext[tostring(k)] = v
+            end
+            new_annotation["ext"] = new_ext
+        else
+            new_annotation = annotation
+        end
+        new_annotations[hash] = new_annotation
+    end
+    return new_annotations
+end
+
+--- Modifies the given table so the keys in the `ext` sub-table are paresd into numbers.
+local function destringify_ext_keys(annotations)
+    for hash, annotation in pairs(annotations) do
+        if annotation["ext"] then
+            local new_ext = {}
+            for k, v in pairs(annotation["ext"]) do
+                new_ext[tonumber(k)] = v
+            end
+            annotation["ext"] = new_ext
+        end
+    end
+end
+
 local function read_json_file(path)
     local file = io.open(path, "r")
     if not file then
@@ -53,13 +92,16 @@ local function read_json_file(path)
         return {}
     end
 
+    destringify_ext_keys(data)
+
     return data
 end
 
 local function write_json_file(path, data)
     local file = io.open(path, "w")
     if not file then return false end
-    file:write(rapidjson.encode(data))
+
+    file:write(rapidjson.encode(with_stringified_ext_keys(data)))
     file:close()
     return true
 end
