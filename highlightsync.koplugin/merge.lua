@@ -24,7 +24,7 @@ end
 -- Criação de chave mais eficiente e com menor risco de colisão
 local function generate_key(highlight)
     local text = highlight.text or ""
-    local hash = tostring(#text) .. ":" .. (highlight.text:sub(1, 10) or "")
+    local hash = tostring(#text) .. ":" .. (text:sub(1, 10) or "")
     return string.format("%s|%s", highlight.pageno or "?", hash)
 end
 
