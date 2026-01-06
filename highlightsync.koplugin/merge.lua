@@ -21,11 +21,18 @@ local function get_newer(item1, item2)
     return t1 >= t2 and item1 or item2
 end
 
--- Criação de chave mais eficiente e com menor risco de colisão
+-- Generate a stable key using pos0+pos1 (XPath positions) which are consistent
+-- across devices regardless of font size, screen size, or page layout settings.
+-- Falls back to page + text hash for older annotations without position data.
 local function generate_key(highlight)
+    -- Use pos0 + pos1 as primary key (stable across devices)
+    if highlight.pos0 and highlight.pos1 then
+        return string.format("%s|%s", highlight.pos0, highlight.pos1)
+    end
+    -- Fallback: use page + text hash for annotations without position data
     local text = highlight.text or ""
-    local hash = tostring(#text) .. ":" .. (highlight.text:sub(1, 10) or "")
-    return string.format("%s|%s", highlight.pageno or "?", hash)
+    local hash = tostring(#text) .. ":" .. (text:sub(1, 20) or "")
+    return string.format("%s|%s", highlight.page or "?", hash)
 end
 
 local function convert_to_map(highlights)
