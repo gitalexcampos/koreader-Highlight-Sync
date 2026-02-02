@@ -2,5 +2,5 @@ return {
     name = "HighlightSync",
     fullname = "HighlightSync",
     description = "HighlightSync is a plugin for KOReader that synchronizes and merges your highlights, notes, and bookmarks across multiple devices or cloud backup locations.",
-    version = "0.5",  -- ← Add this line!
+    version = "0.6",  -- ← Add this line!
 }
