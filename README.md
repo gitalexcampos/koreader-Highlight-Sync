@@ -26,14 +26,12 @@ More devices may work — feel free to open an issue or pull request with your r
 
 ## ✨ Features
 
-- 🔄 **Manual sync** of:
-  - Highlighted text
-  - Notes
-  - Bookmarks (page marks)
-- 📝 **Merges offline highlights and notes** from two or more devices
-- ☁️ Works with **WebDAV** and **Dropbox**
-- 📅 Syncs highlight edits based on **the latest update timestamp**
-- ⚡ Lightweight and easy to install
+- 🔄 **Manual sync** of Highlights, Notes, and Bookmarks.
+- 🛡️ **Conflict-free Merging:** Highlights made offline on different devices are combined intelligently without overwriting each other.
+- 📝 **True Offline Freedom:** Read and annotate on your Kindle and Boox separately; sync them all when you get Wi-Fi.
+- ☁️ Works with **WebDAV** and **Dropbox**.
+- 📅 **Smart Updates:** Syncs highlight edits based on the latest timestamp.
+- ⚡ **Lightweight** and easy to install.
 
 ---
 
