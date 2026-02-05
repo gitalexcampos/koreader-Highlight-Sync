@@ -10,11 +10,17 @@ local _ = require("gettext")
 local SyncService = require("frontend/apps/cloudstorage/syncservice")
 local Merge = require("merge")
 local rapidjson = require("rapidjson")
+local NetworkMgr = require("ui/network/manager")
+local logger = require("logger")
+
+local is_reloading_due_to_sync = false
+
+
 
 local function dir_exists(path)
     local ok, _, code = os.rename(path, path)
     if not ok then
-        -- Código 13 = permission denied, mas o diretório existe
+        -- Código 13 = permission denied, bat folder has to exist
         return code == 13
     end
     return true
@@ -22,7 +28,8 @@ end
 
 local function ensure_dir_exists(path)
     if not dir_exists(path) then
-        local result = os.execute('mkdir -p "' .. path .. '"')
+        local safe_path = path:gsub("%$", "\\$")
+        local result = os.execute('mkdir -p "' .. safe_path .. '"')
         if not result then
             error("Failed to create directory: " .. path)
         end
@@ -76,7 +83,7 @@ end
 local function read_json_file(path)
     local file = io.open(path, "r")
     if not file then
-        -- Arquivo não existe
+        -- file doesn't exist
         return {}
     end
 
@@ -108,7 +115,19 @@ end
 
 
 function Highlightsync:onDispatcherRegisterActions()
-    Dispatcher:registerAction("hightlightsync_action", {category="none", event="SyncBookHighlights", title=_("Highlight Sync"), reader=true,})
+
+        --- for gestures
+        Dispatcher:registerAction("hightlightsync_action", {
+            category = "none",
+            event = "SyncBookHighlights",
+            title = _("Sync Highlights Now"),
+            help = _("Synchronize highlights with the cloud."),
+            reader = true, 
+            callback = function() 
+                self:onSyncBookHighlights(false) 
+            end
+        })
+
 end
 
 Highlightsync.default_settings = {
@@ -122,21 +141,79 @@ function Highlightsync:init()
         return -- disable in PIC documents
     end
 
+    self.is_syncing = false
+
     Highlightsync.settings = G_reader_settings:readSetting("highlight_sync", self.default_settings)
     self:onDispatcherRegisterActions(
     self.ui.menu:registerToMainMenu(self))
 end
 
+function Highlightsync:onReaderReady()
 
-function Highlightsync.onSync(local_path, cached_path, income_path)
+    if is_reloading_due_to_sync then
+        is_reloading_due_to_sync = false
+        return 
+    end
+
+    if self.settings.sync_on_open and self:canSync() then
+        UIManager:nextTick(function()
+            self:onSyncBookHighlights(false, true)
+        end)
+    end
+end
+
+function Highlightsync:onCloseDocument()
+
+    if is_reloading_due_to_sync then
+        return
+    end
+
+
+    if self.settings.sync_on_close and self:canSync() then
+        -- Sincroniza e sai (sem reload, pois estamos saindo)
+        self:onSyncBookHighlights(false, false) 
+    end
+end
+
+function Highlightsync:onResume()
+    
+    if self.settings.sync_on_resume then
+        UIManager:nextTick(function()
+            if NetworkMgr:isWifiOn() then
+                self:onSyncBookHighlights(false, true)
+                self.settings.pending_sync = false
+                G_reader_settings:saveSetting("highlight_sync", self.settings)
+            end
+        end)
+    end
+
+end
+
+
+
+function Highlightsync:onSync(local_path, cached_path, income_path, reload)
 
     local local_highlights  = DataAnnotations --read_json_file(local_path)  or {}
     local cached_highlights = read_json_file(cached_path) or {}
     local income_highlights = read_json_file(income_path) or {}
+
     local annotations = Merge.Merge_highlights(local_highlights,income_highlights,cached_highlights)
 
     write_json_file(SidecarDir .. "/" .. FileName .. ".json", annotations) -- Save annotations local
     DataAnnotations = annotations
+
+
+        UIManager:nextTick(function()
+            if self.ui and self.ui.annotation then
+                self.ui.annotation.annotations = DataAnnotations
+                if reload then
+                     is_reloading_due_to_sync = true
+                    self.ui:reloadDocument()
+                end
+            end
+        end)
+    
+
     return true
 end
 
@@ -152,25 +229,55 @@ function Highlightsync:canSync()
     return self.is_doc(self) and self.settings.sync_server ~= nil
 end
 
+local function sanitize_filename(str)
+    if not str then return "" end
+    return str:gsub("[^%w%.%-%_]", "_")
+end
 
 
-function Highlightsync:onSyncBookHighlights()
+
+function Highlightsync:onSyncBookHighlights(silent, reload)
     if not self:canSync() then return end
 
-    UIManager:show(InfoMessage:new {
-        text = _("Syncing book highlights. This may take a while."),
-        timeout = 1,
-    })
+    if not silent then
+        UIManager:show(InfoMessage:new {
+            text = _("Syncing book highlights. This may take a while."),
+            timeout = 1,
+        })
+    end
+
+    if self.is_syncing then
+        logger.warn("Highlightsync: Duplicate sync attempt ignored.")
+        return
+    end
+
+    -- enable lock
+    self.is_syncing = true
 
     UIManager:nextTick(function()
-         DataAnnotations = self.ui.annotation.annotations -- self.ui.doc_settings.data.annotations
-         SidecarDir = self.ui.doc_settings.doc_sidecar_dir
-         FileName = SidecarDir:match("([^/]+)/*$")
+
+         local doc_path = self.document and self.document.file
+         local doc_settings = self.ui and self.ui.doc_settings
+         SidecarDir = doc_settings:getSidecarDir(doc_path)
          ensure_dir_exists(SidecarDir)
+         DataAnnotations = self.ui.annotation.annotations -- self.ui.doc_settings.data.annotations
+
+         Raw_name = SidecarDir:match("([^/]+)/*$")
+         FileName = sanitize_filename(Raw_name)
+
          write_json_file(SidecarDir .. "/" .. FileName .. ".json", self.ui.annotation.annotations) -- Save annotations local
-         SyncService.sync(self.settings.sync_server, SidecarDir .. "/" .. FileName .. ".json", self.onSync)
-         self.ui.annotation.annotations = DataAnnotations
-         self.ui:reloadDocument()
+         
+         SyncService.sync(self.settings.sync_server, SidecarDir .. "/" .. FileName .. ".json", 
+            function(local_path, cached_path, income_path)
+                local success = self:onSync(local_path, cached_path, income_path, reload)
+                self.is_syncing = false 
+                return success
+            end,
+            silent
+         )
+
+         
+         
     end)
 end
 
@@ -246,9 +353,38 @@ function Highlightsync:addToMainMenu(menu_items)
             {
                 text = _("Sync Highlights"),
                 callback = function()
-                    self:onSyncBookHighlights()
+                    self:onSyncBookHighlights(true, false)
                 end,
                 enabled_func = function() return self.canSync(self) end
+            },
+            {
+                text = _("Settings"), 
+                sub_item_table = {  
+                    {
+                        text = _("Sync on Book Open"),
+                        checked_func = function() return self.settings.sync_on_open end,
+                        callback = function()
+                            self.settings.sync_on_open = not self.settings.sync_on_open
+                            G_reader_settings:saveSetting("highlight_sync", self.settings)
+                        end,
+                    },
+                    {
+                        text = _("Sync on Book Close"),
+                        checked_func = function() return self.settings.sync_on_close end,
+                        callback = function()
+                            self.settings.sync_on_close = not self.settings.sync_on_close
+                            G_reader_settings:saveSetting("highlight_sync", self.settings)
+                        end,
+                    },
+                    {
+                        text = _("Sync on Book on resume"),
+                        checked_func = function() return self.settings.sync_on_resume end,
+                        callback = function()
+                            self.settings.sync_on_resume = not self.settings.sync_on_resume
+                            G_reader_settings:saveSetting("highlight_sync", self.settings)
+                        end,
+                    },
+                }
             }
         }
     }
