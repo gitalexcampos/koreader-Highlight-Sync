@@ -19,6 +19,7 @@ While it has been tested on several platforms, the author is **not responsible f
 - KOReader on **Linux**
 - **Boox Go 6**
 - **Boox Go 10.3**
+- **Android 15**
 
 More devices may work — feel free to open an issue or pull request with your results!
 
