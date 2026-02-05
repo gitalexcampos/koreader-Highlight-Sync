@@ -124,7 +124,7 @@ function Highlightsync:onDispatcherRegisterActions()
             help = _("Synchronize highlights with the cloud."),
             reader = true, 
             callback = function() 
-                self:onSyncBookHighlights(false) 
+                self:onSyncBookHighlights(false, true) 
             end
         })
 
@@ -353,7 +353,7 @@ function Highlightsync:addToMainMenu(menu_items)
             {
                 text = _("Sync Highlights"),
                 callback = function()
-                    self:onSyncBookHighlights(true, false)
+                    self:onSyncBookHighlights(false, true)
                 end,
                 enabled_func = function() return self.canSync(self) end
             },
