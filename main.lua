@@ -122,10 +122,7 @@ function Highlightsync:onDispatcherRegisterActions()
             event = "SyncBookHighlights",
             title = _("Sync Highlights Now"),
             help = _("Synchronize highlights with the cloud."),
-            reader = true, 
-            callback = function() 
-                self:onSyncBookHighlights(false, true) 
-            end
+            reader = true
         })
 
 end
@@ -144,8 +141,8 @@ function Highlightsync:init()
     self.is_syncing = false
 
     Highlightsync.settings = G_reader_settings:readSetting("highlight_sync", self.default_settings)
-    self:onDispatcherRegisterActions(
-    self.ui.menu:registerToMainMenu(self))
+    self:onDispatcherRegisterActions()
+    self.ui.menu:registerToMainMenu(self)
 end
 
 function Highlightsync:onReaderReady()
@@ -157,7 +154,7 @@ function Highlightsync:onReaderReady()
 
     if self.settings.sync_on_open and self:canSync() then
         UIManager:nextTick(function()
-            self:onSyncBookHighlights(false, true)
+            self:SyncBookHighlights(false, true)
         end)
     end
 end
@@ -171,7 +168,7 @@ function Highlightsync:onCloseDocument()
 
     if self.settings.sync_on_close and self:canSync() then
         -- Sincroniza e sai (sem reload, pois estamos saindo)
-        self:onSyncBookHighlights(false, false) 
+        self:SyncBookHighlights(false, false) 
     end
 end
 
@@ -180,7 +177,7 @@ function Highlightsync:onResume()
     if self.settings.sync_on_resume then
         UIManager:nextTick(function()
             if NetworkMgr:isWifiOn() then
-                self:onSyncBookHighlights(false, true)
+                self:SyncBookHighlights(false, true)
                 self.settings.pending_sync = false
                 G_reader_settings:saveSetting("highlight_sync", self.settings)
             end
@@ -202,18 +199,16 @@ function Highlightsync:onSync(local_path, cached_path, income_path, reload)
     write_json_file(SidecarDir .. "/" .. FileName .. ".json", annotations) -- Save annotations local
     DataAnnotations = annotations
 
-
-        UIManager:nextTick(function()
-            if self.ui and self.ui.annotation then
-                self.ui.annotation.annotations = DataAnnotations
-                if reload then
-                     is_reloading_due_to_sync = true
-                    self.ui:reloadDocument()
-                end
-            end
-        end)
-    
-
+    if self.ui and self.ui.annotation then
+        self.ui.annotation.annotations = DataAnnotations
+        if reload then
+            is_reloading_due_to_sync = true
+            UIManager:tickAfterNext(function()
+            self.ui:reloadDocument()
+            end)
+        end
+    end
+  
     return true
 end
 
@@ -234,17 +229,12 @@ local function sanitize_filename(str)
     return str:gsub("[^%w%.%-%_]", "_")
 end
 
+function Highlightsync:onSyncBookHighlights()
+        self:SyncBookHighlights(false, true)   
+end
 
-
-function Highlightsync:onSyncBookHighlights(silent, reload)
+function Highlightsync:SyncBookHighlights(silent, reload)
     if not self:canSync() then return end
-
-    if not silent then
-        UIManager:show(InfoMessage:new {
-            text = _("Syncing book highlights. This may take a while."),
-            timeout = 1,
-        })
-    end
 
     if self.is_syncing then
         logger.warn("Highlightsync: Duplicate sync attempt ignored.")
@@ -254,31 +244,29 @@ function Highlightsync:onSyncBookHighlights(silent, reload)
     -- enable lock
     self.is_syncing = true
 
-    UIManager:nextTick(function()
+    local doc_path = self.document and self.document.file
+    local doc_settings = self.ui and self.ui.doc_settings
+    SidecarDir = doc_settings:getSidecarDir(doc_path)
+    ensure_dir_exists(SidecarDir)
+    DataAnnotations = self.ui.annotation.annotations -- self.ui.doc_settings.data.annotations
 
-         local doc_path = self.document and self.document.file
-         local doc_settings = self.ui and self.ui.doc_settings
-         SidecarDir = doc_settings:getSidecarDir(doc_path)
-         ensure_dir_exists(SidecarDir)
-         DataAnnotations = self.ui.annotation.annotations -- self.ui.doc_settings.data.annotations
+    Raw_name = SidecarDir:match("([^/]+)/*$")
+    FileName = sanitize_filename(Raw_name)
 
-         Raw_name = SidecarDir:match("([^/]+)/*$")
-         FileName = sanitize_filename(Raw_name)
+    write_json_file(SidecarDir .. "/" .. FileName .. ".json", self.ui.annotation.annotations) -- Save annotations local
 
-         write_json_file(SidecarDir .. "/" .. FileName .. ".json", self.ui.annotation.annotations) -- Save annotations local
-         
-         SyncService.sync(self.settings.sync_server, SidecarDir .. "/" .. FileName .. ".json", 
-            function(local_path, cached_path, income_path)
-                local success = self:onSync(local_path, cached_path, income_path, reload)
-                self.is_syncing = false 
-                return success
-            end,
-            silent
-         )
+    SyncService.sync(self.settings.sync_server, SidecarDir .. "/" .. FileName .. ".json", 
+    function(local_path, cached_path, income_path)
+        local success = self:onSync(local_path, cached_path, income_path, reload)
+        self.is_syncing = false 
+        return success
+    end,
+    silent
+    )
 
          
          
-    end)
+    
 end
 
 
@@ -353,7 +341,7 @@ function Highlightsync:addToMainMenu(menu_items)
             {
                 text = _("Sync Highlights"),
                 callback = function()
-                    self:onSyncBookHighlights(false, true)
+                    self:SyncBookHighlights(false, true)
                 end,
                 enabled_func = function() return self.canSync(self) end
             },
